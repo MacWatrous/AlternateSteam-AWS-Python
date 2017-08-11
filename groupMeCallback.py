@@ -1,33 +1,3 @@
-'''
-This function handles a Slack slash command and echoes the details back to the user.
-
-Follow these steps to configure the slash command in Slack:
-
-  1. Navigate to https://<your-team-domain>.slack.com/services/new
-
-  2. Search for and select "Slash Commands".
-
-  3. Enter a name for your command and click "Add Slash Command Integration".
-
-  4. Copy the token string from the integration settings and use it in the next section.
-
-  5. After you complete this blueprint, enter the provided API endpoint URL in the URL field.
-
-
-Follow these steps to complete the configuration of your command API endpoint
-
-  1. When completing the blueprint configuration select "Open" for security
-     on the "Configure triggers" page.
-
-  2. Enter a name for your execution role in the "Role name" field.
-     Your function's execution role needs kms:Decrypt permissions. We have
-     pre-selected the "KMS decryption permissions" policy template that will
-     automatically add these permissions.
-
-  3. Update the URL for your Slack slash command with the invocation URL for the
-     created API resource in the prod stage.
-'''
-
 import boto3
 import json
 import logging
@@ -101,7 +71,7 @@ def getUrl(event):
         response = requests.get(searchURL)
         searchResults = response.json()
         if len(searchResults) == 0:
-            return respond(None,"")
+            return None
         for i in range(0,len(searchResults)):
             if searchResults['results'][i]['collectionExplicitness'] is 'explicit':
                 return searchResults['results'][i]['collectionViewUrl']
@@ -124,7 +94,7 @@ def getUrl(event):
         response = requests.get(searchURL)
         searchResults = response.json()
         if len(searchResults) == 0:
-            return respond(None,"")
+            return None
         for i in range(0,len(searchResults)):
             if searchResults['results'][i]['collectionExplicitness'] is 'explicit':
                 return searchResults['results'][i]['collectionViewUrl']
@@ -132,9 +102,10 @@ def getUrl(event):
 
 def lambda_handler(event,context):
     itunesURL = getUrl(event)
-    url = 'https://api.groupme.com/v3/bots/post'
-    headers = {'content-type': 'application/json'}
-    payload = {'bot_id' : os.environ['BOT_ID'],'text' : itunesURL}
-    requests.post(url,data = json.dumps(payload),headers = headers)
-
-    return respond(None, "")
+    if itunesURL is not None:
+      url = 'https://api.groupme.com/v3/bots/post'
+      headers = {'content-type': 'application/json'}
+      payload = {'bot_id' : os.environ['BOT_ID'],'text' : itunesURL}
+      requests.post(url,data = json.dumps(payload),headers = headers)
+      return respond(None, "success")
+    return respond(None, "nothing found")
